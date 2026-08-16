@@ -1,0 +1,3 @@
+-- Placeholder migration for 20260626031558_init
+-- This file was created to reconcile a migration present in the database
+-- with the local migrations directory. It intentionally contains no schema changes.
