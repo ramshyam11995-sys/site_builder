@@ -11,8 +11,25 @@ const app = express();
 
 const port = process.env.PORT || 3000;
 
+// 1. Create a list of allowed websites that can talk to your server
+const allowedOrigins = [
+    'https://onrender.com', // Your deployed Render frontend
+    'http://localhost:5173',                   // Standard Vite local frontend dev port
+    'http://localhost:3000'                    // Alternative local dev port
+];
+
+// 2. Update CORS to check the incoming request against your list
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
