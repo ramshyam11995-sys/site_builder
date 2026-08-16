@@ -11,17 +11,16 @@ const app = express();
 
 const port = process.env.PORT || 3000;
 
-// 1. Create a list of allowed websites that can talk to your server
+// 1. FIXED: Set the correct, complete production URL for your frontend application
 const allowedOrigins = [
-    'https://onrender.com', // Your deployed Render frontend
+    'https://site-builder-4-9za6.onrender.com', // Your actual deployed Render frontend
     'http://localhost:5173',                   // Standard Vite local frontend dev port
     'http://localhost:3000'                    // Alternative local dev port
 ];
 
-// 2. Update CORS to check the incoming request against your list
+// 2. CORS configuration must remain at the absolute top of your middleware stack
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
         if (allowedOrigins.indexOf(origin) !== -1) {
@@ -35,24 +34,26 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// 3. Keep raw webhook stream parsed before any global JSON body parsing layers
 app.post(
     '/api/webhook',
     express.raw({ type: 'application/json' }),
     stripeWebhook
 );
 
+// 4. FIXED: Better Auth handler MUST execute BEFORE express.json() parses request bodies
+app.use('/api/auth', (req: Request, res: Response) => {
+    console.log('incoming auth request:', req.method, req.originalUrl);
+    return toNodeHandler(auth)(req, res);
+});
+
+// 5. Global body parsers now apply safely to your standard custom endpoints below
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// quick health check route
+// 6. Base monitoring and application routing endpoints
 app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'ok' });
-});
-
-// Forward requests under /api/auth to the Better Auth handler
-app.use('/api/auth', (req: Request, res: Response, next) => {
-    console.log('incoming auth request:', req.method, req.originalUrl);
-    return toNodeHandler(auth)(req, res);
 });
 
 app.get('/', (req: Request, res: Response) => {
@@ -62,10 +63,8 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api/user', userRoutes);
 app.use('/api/project', projectRouter);
 
-
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
-    // debug: list registered routes/layers
     try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const stack: any[] = (app as any)._router?.stack || [];
