@@ -12,8 +12,10 @@ const trustedOrigins = [
 ];
 
 const authBaseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
-const isLocalDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-const shouldUseCrossSiteSessionCookie = isLocalDevelopment && authBaseUrl.includes('localhost');
+const isProduction = process.env.NODE_ENV === 'production';
+
+// FIXED: Enable cross-site cookies if running in production across different Render URLs
+const useCrossSiteCookies = isProduction || authBaseUrl.includes('localhost');
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
@@ -24,18 +26,19 @@ export const auth = betterAuth({
         enabled: true,
     },
     user: {
-        deleteUser: {enabled: true}
+        deleteUser: { enabled: true }
     },
     baseURL: authBaseUrl,
-    secret: process.env.BETTER_AUTH_SECRET!,
+    secret: process.env.BETTER_AUTH_SECRET,
     advanced: {
         cookies: {
             session_token: {
                 name: 'auth_session',
                 attributes: {
                     httpOnly: true,
-                    secure: shouldUseCrossSiteSessionCookie || process.env.NODE_ENV === 'production',
-                    sameSite: shouldUseCrossSiteSessionCookie ? 'none' : 'lax',
+                    // Secure must be true for cross-site 'none' cookies to work
+                    secure: useCrossSiteCookies, 
+                    sameSite: useCrossSiteCookies ? 'none' : 'lax',
                     path: '/',
                 },
             },
