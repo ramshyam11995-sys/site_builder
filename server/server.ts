@@ -11,27 +11,12 @@ const app = express();
 
 const port = process.env.PORT || 3000;
 
-const allowedOrigins = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    ...(process.env.TRUSTED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) || []),
-];
-
-const corsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-            return;
-        }
-
-        callback(new Error(`Origin not allowed: ${origin}`));
-    },
+app.use(cors({
+    origin: '*',
     credentials: true,
-};
-// Middleware
-app.use(cors(corsOptions));
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.post(
     '/api/webhook',
