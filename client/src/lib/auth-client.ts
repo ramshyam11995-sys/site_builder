@@ -4,7 +4,7 @@ const backendAuthUrl =
   import.meta.env.VITE_BASEURL || "http://localhost:3000";
 
 export const authClient = createAuthClient({
-  baseURL: `${backendAuthUrl}/api/auth`,
+  baseURL: backendAuthUrl,
   fetchOptions: {
     credentials: "include",
   },
