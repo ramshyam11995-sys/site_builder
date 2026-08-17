@@ -1,13 +1,13 @@
-import { createAuthClient } from "better-auth/react"
+import { createAuthClient } from "better-auth/react";
 
-// Automatically fallback to local path with /api/auth included if environment variable isn't set
-const backendAuthUrl = import.meta.env.VITE_BASEURL || 'http://localhost:3000/api/auth';
+const backendAuthUrl =
+  import.meta.env.VITE_BASEURL || "http://localhost:3000";
 
 export const authClient = createAuthClient({
-    baseURL: backendAuthUrl,
-    fetchOptions: {
-        credentials: 'include' // This is correct, keeps cookies flowing safely
-    },
-})
+  baseURL: `${backendAuthUrl}/api/auth`,
+  fetchOptions: {
+    credentials: "include",
+  },
+});
 
 export const { signIn, signUp, useSession } = authClient;
