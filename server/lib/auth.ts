@@ -8,6 +8,8 @@ const trustedOrigins = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    // Production frontend
+    "https://site-builder-4-9za6.onrender.com",
     ...(process.env.TRUSTED_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) || []),
 ];
 
