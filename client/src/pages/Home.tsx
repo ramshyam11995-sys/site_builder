@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 const Home = () => {
 
   const {data: session} = authClient.useSession()
+  console.log("SESSION:", session);
   const navigate = useNavigate()
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
