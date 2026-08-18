@@ -17,7 +17,7 @@ const authBaseUrl = process.env.BETTER_AUTH_URL || "http://localhost:3000";
 const isProduction = process.env.NODE_ENV === 'production';
 
 // FIXED: Enable cross-site cookies if running in production across different Render URLs
-const useCrossSiteCookies = isProduction || authBaseUrl.includes('localhost');
+const useCrossSiteCookies = true;
 
 export const auth = betterAuth({
     database: prismaAdapter(prisma, {
