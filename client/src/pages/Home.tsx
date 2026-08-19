@@ -4,6 +4,11 @@ import { Loader2Icon } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import framerLogo from '/framer.svg';
+import huaweiLogo from '/huawei.svg';
+import instagramLogo from '/instagram.svg';
+import microsoftLogo from '/microsoft.svg';
+import walmartLogo from '/walmart.svg';
 
 const Home = () => {
 
@@ -85,11 +90,11 @@ const Home = () => {
       </form>
 
 <div className="flex flex-wrap items-center justify-center gap-16 md:gap-20 mx-auto mt-16">
-  <img className="max-w-28 md:max-w-32" src="/framer.svg" alt="Framer" />
-  <img className="max-w-28 md:max-w-32" src="/huawei.svg" alt="Huawei" /> 
-  <img className="max-w-28 md:max-w-32" src="/instagram.svg" alt="Instagram" />
-  <img className="max-w-28 md:max-w-32" src="/microsoft.svg" alt="Microsoft" />
-  <img className="max-w-28 md:max-w-32" src="/walmart.svg" alt="Walmart" />
+  <img className="max-w-28 md:max-w-32" src={framerLogo} alt="Framer" />
+  <img className="max-w-28 md:max-w-32" src={huaweiLogo} alt="Huawei" /> 
+  <img className="max-w-28 md:max-w-32" src={instagramLogo} alt="Instagram" />
+  <img className="max-w-28 md:max-w-32" src={microsoftLogo} alt="Microsoft" />
+  <img className="max-w-28 md:max-w-32" src={walmartLogo} alt="Walmart" />
 </div>
 
       {/* <div className="flex flex-wrap items-center justify-center gap-16 md:gap-20 mx-auto mt-16">
