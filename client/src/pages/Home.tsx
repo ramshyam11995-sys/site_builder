@@ -95,13 +95,13 @@ const Home = () => {
       </form>
 
       {/* Render layout with local inline SVG elements */}
-     <div className="flex flex-wrap items-center justify-center gap-16 md:gap-20 mx-auto mt-16">
-  <img className="max-w-28 md:max-w-32" src={framerLogo} alt="Framer" />
-  <img className="max-w-28 md:max-w-32" src={huaweiLogo} alt="Huawei" /> 
-  <img className="max-w-28 md:max-w-32" src={instagramLogo} alt="Instagram" />
-  <img className="max-w-28 md:max-w-32" src={microsoftLogo} alt="Microsoft" />
-  <img className="max-w-28 md:max-w-32" src={walmartLogo} alt="Walmart" />
-</div>
+ div className="flex flex-wrap items-center justify-center gap-16 md:gap-20 mx-auto mt-16 opacity-80">
+        <FramerLogo />
+        <HuaweiLogo />
+        <InstagramLogo />
+        <MicrosoftLogo />
+        <WalmartLogo />
+      </div>
     </section>
   );
 };
