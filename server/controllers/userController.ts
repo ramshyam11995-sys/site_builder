@@ -430,14 +430,14 @@ export const purchaseCredits = async (req: Request, res: Response) => {
             });
         }
 
-        const plan = plans[planId as keyof typeof plans];
-        const frontendUrl = process.env.FRONTEND_URL;
+      // Replace this block in purchaseCredits:
+const frontendUrl = process.env.FRONTEND_URL || process.env.TRUSTED_ORIGINS;
 
-        if (!frontendUrl) {
-            return res.status(500).json({
-                message: 'FRONTEND_URL is not configured'
-            });
-        }
+if (!frontendUrl) {
+    return res.status(500).json({
+        message: 'FRONTEND_URL is not configured'
+    });
+}
 
         const stripe = getStripe();
 
