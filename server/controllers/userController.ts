@@ -340,38 +340,33 @@ export const purchaseCredits = async (req: Request, res: Response) => {
     });
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
-    const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-      success_url: `${origin}/loading`,
-      cancel_url: `${origin}`,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `AiSiteBuilder -${plan.credits} credits`
-            },
-            unit_amount: Math.floor(transaction.amount) * 100
-          },
-          quantity: 1
-        }
-      ],
-      mode: 'payment',
-      metadata: {
-                appId: 'ai-site-builder',
-                transactionId: transaction.id
+const session = await stripe.checkout.sessions.create({
+  payment_method_types: ['card'],
+  success_url: `${origin}/loading`,
+  cancel_url: `${origin}`,
+  line_items: [
+    {
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: `AiSiteBuilder - ${plan.credits} credits`
+        },
+        // 🌟 FIXED: Use Math.round to correctly convert decimal pricing strings into cents
+        unit_amount: Math.round(transaction.amount * 100)
       },
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60
-    });
+      quantity: 1
+    }
+  ],
+  mode: 'payment',
+  metadata: {
+    appId: 'ai-site-builder',
+    transactionId: transaction.id
+  },
+  expires_at: Math.floor(Date.now() / 1000) + 30 * 60
+});
 
-    return res.status(201).json({
-      message: 'Credits purchased successfully',
-      payment_link: session.url,
-      transaction
-    });
-
-  } catch (error: any) {
-    console.log(error.code || error.message);
-    return res.status(500).json({ message: error.message });
-  }
-}
+return res.status(201).json({
+  message: 'Credits purchased successfully',
+  payment_link: session.url,
+  transaction
+});
