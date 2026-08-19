@@ -96,11 +96,7 @@ const Home = () => {
 
       {/* Render layout with local inline SVG elements */}
       <div className="flex flex-wrap items-center justify-center gap-16 md:gap-20 mx-auto mt-16 opacity-80">
-        <FramerLogo />
-        <HuaweiLogo />
-        <InstagramLogo />
-        <MicrosoftLogo />
-        <WalmartLogo />
+        <FramerLogo /> <HuaweiLogo /> <InstagramLogo /> <MicrosoftLogo /> <WalmartLogo />
       </div>
     </section>
   );
