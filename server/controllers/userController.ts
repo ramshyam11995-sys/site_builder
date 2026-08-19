@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import openai from '../configs/openai.js';
 import Stripe from 'stripe';
+import 'dotenv/config';
 
 const getRouteParamId = (value: string | string[] | undefined) => {
     if (Array.isArray(value)) {
