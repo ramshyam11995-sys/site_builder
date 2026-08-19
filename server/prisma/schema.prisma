@@ -48,7 +48,7 @@ model WebsiteProject {
   isPublished           Boolean @default(false)
 
   // Relations
-  conversations Conversations[]
+  conversation Conversation[]
   versions     Version[]
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade) // Added Cascade
 
