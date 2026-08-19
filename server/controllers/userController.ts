@@ -339,7 +339,7 @@ export const purchaseCredits = async (req: Request, res: Response) => {
       }
     });
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 const session = await stripe.checkout.sessions.create({
   payment_method_types: ['card'],
   success_url: `${origin}/loading`,
@@ -351,7 +351,6 @@ const session = await stripe.checkout.sessions.create({
         product_data: {
           name: `AiSiteBuilder - ${plan.credits} credits`
         },
-        // 🌟 FIXED: Use Math.round to correctly convert decimal pricing strings into cents
         unit_amount: Math.round(transaction.amount * 100)
       },
       quantity: 1
@@ -370,5 +369,9 @@ return res.status(201).json({
   payment_link: session.url,
   transaction
 });
- }
+
+} catch (error: any) {
+  console.log(error.code || error.message);
+  return res.status(500).json({ message: error.message });
+}
 }
