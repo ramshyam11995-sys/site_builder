@@ -2,13 +2,11 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import openai from '../configs/openai.js';
 import Stripe from 'stripe';
-import 'dotenv/config';
 
 const getRouteParamId = (value: string | string[] | undefined) => {
     if (Array.isArray(value)) {
         return value[0];
     }
-
     return value;
 };
 
@@ -41,7 +39,7 @@ export const getUserCredits = async (req: Request, res: Response) => {
 
         return res.json({ credits: user.credits });
     } catch (error: any) {
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
         return res.status(500).json({
             message: error?.message || 'Internal server error'
         });
@@ -70,7 +68,6 @@ export const CreateUserProject = async (req: Request, res: Response) => {
         }
 
         // Atomically reserve the 5 credits.
-        // This prevents two simultaneous requests from spending the same credits.
         const creditReservation = await prisma.user.updateMany({
             where: {
                 id: userId,
@@ -132,13 +129,12 @@ export const CreateUserProject = async (req: Request, res: Response) => {
         });
 
         // Enhance user prompt
-        const promptEnhanceResponse =
-            await openai.chat.completions.create({
-                model: 'poolside/laguna-s-2.1:free',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `
+        const promptEnhanceResponse = await openai.chat.completions.create({
+            model: 'poolside/laguna-s-2.1:free',
+            messages: [
+                {
+                    role: 'system',
+                    content: `
 You are a Prompt enhancement specialist. Take the user's website request and expand it into a detailed, comprehensive prompt that will help create the best possible website.
 
 Enhance this prompt by:
@@ -150,14 +146,14 @@ Enhance this prompt by:
 6. Adding any missing but important elements
 
 Return ONLY the enhanced prompt, nothing else. Make it detailed but concise (2-3 paragraphs max).
-                        `.trim()
-                    },
-                    {
-                        role: 'user',
-                        content: initialPrompt
-                    }
-                ]
-            });
+                    `.trim()
+                },
+                {
+                    role: 'user',
+                    content: initialPrompt
+                }
+            ]
+        });
 
         const enhancedPrompt =
             promptEnhanceResponse.choices[0]?.message?.content?.trim();
@@ -183,13 +179,12 @@ Return ONLY the enhanced prompt, nothing else. Make it detailed but concise (2-3
         });
 
         // Generate website code
-        const codeGenerationResponse =
-            await openai.chat.completions.create({
-                model: 'poolside/laguna-s-2.1:free',
-                messages: [
-                    {
-                        role: 'system',
-                        content: `
+        const codeGenerationResponse = await openai.chat.completions.create({
+            model: 'poolside/laguna-s-2.1:free',
+            messages: [
+                {
+                    role: 'system',
+                    content: `
 You are an expert web developer. Create a complete, production-ready single-page website based on this request: "${enhancedPrompt}"
 
 CRITICAL REQUIREMENTS:
@@ -214,14 +209,14 @@ CRITICAL HARD RULES:
 4. Do NOT include markdown, explanations, notes, or code fences.
 
 The HTML should be complete and ready to render as-is with Tailwind CSS.
-                        `.trim()
-                    },
-                    {
-                        role: 'user',
-                        content: enhancedPrompt
-                    }
-                ]
-            });
+                    `.trim()
+                },
+                {
+                    role: 'user',
+                    content: enhancedPrompt
+                }
+            ]
+        });
 
         const code = (codeGenerationResponse.choices[0]?.message?.content || '')
             .replace(/^```(?:html)?\s*/i, '')
@@ -262,7 +257,6 @@ The HTML should be complete and ready to render as-is with Tailwind CSS.
             projectId: project.id
         });
     } catch (error: any) {
-        // Refund only if the 5 credits were actually reserved.
         if (creditsDeducted) {
             try {
                 await prisma.user.update({
@@ -277,7 +271,7 @@ The HTML should be complete and ready to render as-is with Tailwind CSS.
             }
         }
 
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
 
         return res.status(500).json({
             message: error?.message || 'Failed to create project'
@@ -306,7 +300,7 @@ export const getUserProject = async (req: Request, res: Response) => {
                 userId
             },
             include: {
-                conversations: { // FIXED: Changed 'conversation' to 'conversations' to match Prisma schema
+                conversations: {
                     orderBy: { timestamp: 'asc' }
                 },
                 versions: {
@@ -323,7 +317,7 @@ export const getUserProject = async (req: Request, res: Response) => {
 
         return res.json({ project });
     } catch (error: any) {
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
         return res.status(500).json({
             message: error?.message || 'Internal server error'
         });
@@ -346,7 +340,7 @@ export const getUserProjects = async (req: Request, res: Response) => {
 
         return res.json({ projects });
     } catch (error: any) {
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
         return res.status(500).json({
             message: error?.message || 'Internal server error'
         });
@@ -398,7 +392,7 @@ export const toggleProjectPublish = async (req: Request, res: Response) => {
             isPublished: updatedProject.isPublished
         });
     } catch (error: any) {
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
         return res.status(500).json({
             message: error?.message || 'Internal server error'
         });
@@ -420,30 +414,30 @@ export const purchaseCredits = async (req: Request, res: Response) => {
             enterprise: { credits: 1000, amount: 49 }
         } as const;
 
-        const planId =
-            typeof req.body?.planId === 'string'
-                ? req.body.planId.trim()
-                : '';
+        const rawPlan = req.body?.planId || req.body?.plan || req.body?.plan_id;
+        const planId = typeof rawPlan === 'string' ? rawPlan.trim().toLowerCase() : '';
 
-        if (!(planId in plans)) {
-            return res.status(404).json({
-                message: 'plan not found'
+        if (!planId || !(planId in plans)) {
+            return res.status(400).json({
+                message: `Invalid plan. Expected one of: ${Object.keys(plans).join(', ')}`
             });
         }
 
-      // Replace this block in purchaseCredits:
-const frontendUrl = process.env.FRONTEND_URL || process.env.TRUSTED_ORIGINS;
+        const plan = plans[planId as keyof typeof plans];
+        
+        // Resolve target frontend domain dynamically across env parameters & headers
+        const rawFrontendUrl = process.env.FRONTEND_URL || process.env.TRUSTED_ORIGINS || (req.headers.origin as string);
+        const frontendUrl = rawFrontendUrl ? rawFrontendUrl.split(',')[0].trim().replace(/\/$/, '') : '';
 
-if (!frontendUrl) {
-    return res.status(500).json({
-        message: 'FRONTEND_URL is not configured'
-    });
-}
+        if (!frontendUrl) {
+            return res.status(500).json({
+                message: 'FRONTEND_URL environment variable is missing on server'
+            });
+        }
 
         const stripe = getStripe();
 
-        // Create a pending transaction. Credits are added only by the
-        // verified Stripe webhook after payment succeeds.
+        // Create pending transaction record
         const transaction = await prisma.transaction.create({
             data: {
                 userId,
@@ -473,7 +467,7 @@ if (!frontendUrl) {
                 mode: 'payment',
                 metadata: {
                     appId: 'ai-site-builder',
-                    appID: 'ai-site-builder', // Added appID for webhook compatibility
+                    appID: 'ai-site-builder',
                     transactionId: transaction.id,
                     userId,
                     planId,
@@ -483,19 +477,18 @@ if (!frontendUrl) {
             });
 
             return res.status(201).json({
-                message: 'Checkout session created',
+                message: 'Checkout session created successfully',
                 payment_link: session.url,
                 transaction
             });
         } catch (stripeError) {
-            // Delete pending transaction if checkout session creation fails
             try {
                 await prisma.transaction.delete({
                     where: { id: transaction.id }
                 });
             } catch (deleteError) {
                 console.error(
-                    'Failed to delete failed Stripe transaction:',
+                    'Failed to cleanup failed Stripe transaction:',
                     deleteError
                 );
             }
@@ -503,7 +496,7 @@ if (!frontendUrl) {
             throw stripeError;
         }
     } catch (error: any) {
-        console.log(error?.code || error?.message || error);
+        console.error(error?.code || error?.message || error);
 
         return res.status(500).json({
             message: error?.message || 'Unable to create checkout session'
