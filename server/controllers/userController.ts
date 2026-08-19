@@ -305,7 +305,7 @@ export const getUserProject = async (req: Request, res: Response) => {
                 userId
             },
             include: {
-                conversation: {
+                conversations: { // FIXED: Changed 'conversation' to 'conversations' to match Prisma schema
                     orderBy: { timestamp: 'asc' }
                 },
                 versions: {
@@ -472,6 +472,7 @@ export const purchaseCredits = async (req: Request, res: Response) => {
                 mode: 'payment',
                 metadata: {
                     appId: 'ai-site-builder',
+                    appID: 'ai-site-builder', // Added appID for webhook compatibility
                     transactionId: transaction.id,
                     userId,
                     planId,
@@ -486,8 +487,7 @@ export const purchaseCredits = async (req: Request, res: Response) => {
                 transaction
             });
         } catch (stripeError) {
-            // Do not leave an apparently active transaction if Stripe
-            // session creation itself failed.
+            // Delete pending transaction if checkout session creation fails
             try {
                 await prisma.transaction.delete({
                     where: { id: transaction.id }
