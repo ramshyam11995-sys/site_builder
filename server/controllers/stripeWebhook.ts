@@ -66,7 +66,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
           console.log(`🔍 Extracted from payment_intent session list metadata: appId=${appId}, transactionId=${transactionId}`);
 
           if (appId === 'ai-site-builder' && transactionId) {
-            const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
+            const transaction = await prisma.transaction.findFirst({ where: { id: transactionId } });
             
             if (transaction && !transaction.isPaid) {
               await prisma.transaction.update({
