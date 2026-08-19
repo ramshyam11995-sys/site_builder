@@ -9,6 +9,9 @@ import { stripeWebhook } from "./controllers/stripeWebhook.js";
 
 const app = express();
 
+// ADD THIS LINE HERE: Tells Express to trust Render's reverse proxy headers to get real user IPs
+app.set('trust proxy', true);
+
 const port = process.env.PORT || 3000;
 
 // 1. FIXED: Set the correct, complete production URL for your frontend application
