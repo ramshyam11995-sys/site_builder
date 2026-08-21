@@ -7,7 +7,6 @@ export const stripeWebhook = async (request: Request, response: Response) => {
   const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
   let event: Stripe.Event;
 
-  // Defensive checks
   if (!endpointSecret) {
     console.error('❌ Error: STRIPE_WEBHOOK_SECRET is completely missing in .env');
     return response.status(500).json({ message: 'Stripe webhook secret is not configured' });
@@ -16,19 +15,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
   const signature = (request.headers['stripe-signature'] || '') as string;
   if (!signature) {
     console.error('⚠️ Missing stripe-signature header on webhook request');
-    // Return 400 so Stripe shows a failed delivery (useful to see in Dashboard)
     return response.sendStatus(400);
-  }
-
-  // Helpful debug log (body will be raw Buffer when express.raw is used)
-  try {
-    console.log('--- incoming webhook headers ---', {
-      'stripe-signature': signature,
-      'content-type': request.headers['content-type']
-    });
-    console.log('--- incoming webhook body length ---', (request.body && (request.body as any).length) || 'unknown');
-  } catch (e) {
-    // ignore logging errors
   }
 
   try {
@@ -47,7 +34,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
         console.log('checkout.session.completed metadata:', { appId, transactionId });
 
         if (appId === 'ai-site-builder' && transactionId) {
-          // Find first, update safely (avoid throwing if missing)
+          // 🌟 FIXED: Changed from findUnique to findFirst to prevent database runtime crashes
           const transaction = await prisma.transaction.findFirst({
             where: { id: transactionId }
           });
@@ -93,6 +80,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
         console.log('payment_intent -> session metadata:', { appId, transactionId });
 
         if (appId === 'ai-site-builder' && transactionId) {
+          // 🌟 FIXED: Changed from findUnique to findFirst here as well
           const transaction = await prisma.transaction.findFirst({ where: { id: transactionId } });
           if (transaction && !transaction.isPaid) {
             await prisma.transaction.update({ where: { id: transactionId }, data: { isPaid: true } });
