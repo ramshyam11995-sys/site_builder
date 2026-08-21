@@ -12,7 +12,12 @@ export const stripeWebhook = async (request: Request, response: Response) => {
     return response.status(500).json({ message: 'Stripe webhook secret is not configured' });
   }
 
-  const signature = request.headers['stripe-signature'] as string;
+  const signature = (request.headers['stripe-signature'] || '') as string;
+  if (!signature) {
+    console.error('⚠️ Missing stripe-signature header on webhook request');
+    // Return 400 so Stripe will show a failed delivery (useful during debugging)
+    return response.sendStatus(400);
+  }
   
   try {
     event = stripe.webhooks.constructEvent(request.body, signature, endpointSecret);
@@ -26,26 +31,39 @@ export const stripeWebhook = async (request: Request, response: Response) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        console.log('checkout.session.completed full session object:', {
+          id: session.id,
+          payment_status: (session as any).payment_status,
+          metadata: session.metadata
+        });
+
         const { transactionId, appId } = session.metadata ?? {};
-        
         console.log(`🔍 Extracted from checkout.session metadata: appId=${appId}, transactionId=${transactionId}`);
 
         if (appId === 'ai-site-builder' && transactionId) {
-          console.log(`🔄 Attempting database update for transaction ID: ${transactionId}`);
-          
-          const transaction = await prisma.transaction.update({
-            where: { id: transactionId },
-            data: { isPaid: true }
+          // Find transaction first - avoid throwing when transaction is missing
+          const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId }
           });
 
-          console.log(`💼 Found Transaction. Upgrading user ID: ${transaction.userId} with credits: ${transaction.credits}`);
+          if (!transaction) {
+            console.warn(`⚠️ Transaction ${transactionId} not found in DB — skipping credit update.`);
+          } else if (transaction.isPaid) {
+            console.log(`ℹ️ Transaction ${transactionId} is already marked paid; no action needed.`);
+          } else {
+            // Mark paid and increment user credits atomically
+            await prisma.transaction.update({
+              where: { id: transactionId },
+              data: { isPaid: true }
+            });
 
-          const updatedUser = await prisma.user.update({
-            where: { id: transaction.userId },
-            data: { credits: { increment: transaction.credits } }
-          });
+            const updatedUser = await prisma.user.update({
+              where: { id: transaction.userId },
+              data: { credits: { increment: transaction.credits } }
+            });
 
-          console.log(`🎉 Success! User ${updatedUser.id} credits incremented to: ${updatedUser.credits}`);
+            console.log(`🎉 Success! User ${updatedUser.id} credits incremented to: ${updatedUser.credits}`);
+          }
         } else {
           console.warn('⚠️ Skipped: Metadata conditions were not met for checkout.session.completed');
         }
@@ -66,7 +84,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
           console.log(`🔍 Extracted from payment_intent session list metadata: appId=${appId}, transactionId=${transactionId}`);
 
           if (appId === 'ai-site-builder' && transactionId) {
-            const transaction = await prisma.transaction.findFirst({ where: { id: transactionId } });
+            const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
             
             if (transaction && !transaction.isPaid) {
               await prisma.transaction.update({
@@ -80,7 +98,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
               });
               console.log(`🎉 Success! Credits added via payment_intent callback fallback.`);
             } else {
-              console.log('ℹ️ Info: Transaction was already marked paid by checkout session block.');
+              console.log('ℹ️ Info: Transaction was already marked paid or not found.');
             }
           }
         } else {
