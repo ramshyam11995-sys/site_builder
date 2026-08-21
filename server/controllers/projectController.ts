@@ -267,7 +267,7 @@ export const getProjectPreview = async (req: Request, res: Response) => {
         const project = await prisma.websiteProject.findUnique({
             where: { id: projectId },
             include: {
-                conversations: {
+                conversation: {
                     orderBy: { timestamp: 'asc' }
                 },
                 versions: {
