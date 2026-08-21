@@ -48,7 +48,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
 
         if (appId === 'ai-site-builder' && transactionId) {
           // Find first, update safely (avoid throwing if missing)
-          const transaction = await prisma.transaction.findUnique({
+          const transaction = await prisma.transaction.findFirst({
             where: { id: transactionId }
           });
 
@@ -93,7 +93,7 @@ export const stripeWebhook = async (request: Request, response: Response) => {
         console.log('payment_intent -> session metadata:', { appId, transactionId });
 
         if (appId === 'ai-site-builder' && transactionId) {
-          const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } });
+          const transaction = await prisma.transaction.findFirst({ where: { id: transactionId } });
           if (transaction && !transaction.isPaid) {
             await prisma.transaction.update({ where: { id: transactionId }, data: { isPaid: true } });
             await prisma.user.update({ where: { id: transaction.userId }, data: { credits: { increment: transaction.credits } } });
