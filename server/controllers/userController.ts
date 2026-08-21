@@ -300,7 +300,7 @@ export const getUserProject = async (req: Request, res: Response) => {
                 userId
             },
             include: {
-                conversations: {
+                conversation: {
                     orderBy: { timestamp: 'asc' }
                 },
                 versions: {
